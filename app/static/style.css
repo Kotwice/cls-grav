@@ -1,0 +1,14 @@
+main {
+    display: flex;
+    flex-wrap: nowrap;
+    height: 100vh;
+    height: -webkit-fill-available;
+    max-height: 100vh;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.body {
+    background-color: #1E293B;
+    color: #D0D4EA;
+}
