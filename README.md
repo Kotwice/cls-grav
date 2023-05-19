@@ -4,7 +4,7 @@
  
 ## The project allows to solve N-body task of Newton calssical gravitation law in 2D and 3D configuration.
 
-## Following frameforks and packege managers were used:
+## Following frameworks and packege managers were used:
 ### jquery
 ### flask
 ### poetry
