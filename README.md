@@ -1,1 +1,11 @@
-## flaks server of task calculation bodies movement forsed by classical gravitaation force in 2d and 3d
+## The application represents series of tool that solves some mathematical & physical task by way numerical calculation.
+
+# The present build consists a flask server as backend and user interface based native javascript & jquery.
+ 
+# The project alows to solve N-body task of Newton calssical gravitation law in 2D and 3D configuration.
+
+## Following frameforks and packege managers were used:
+### jquery
+### flask
+### poetry
+### node js

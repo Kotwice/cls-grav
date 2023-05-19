@@ -13,6 +13,7 @@ plotly = "^5.14.1"
 nbformat = "^4.2.0"
 scipy = "^1.9.3"
 flask = "^2.3.2"
+psycopg2 = "^2.9.6"
 
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.23.1"

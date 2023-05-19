@@ -1,0 +1,8 @@
+{
+    "postgresql" : {
+        "host": "localhost",
+        "database": "test",
+        "user": "postgres",
+        "password": "sosi-pisos-tya-paravoz"
+    }
+}

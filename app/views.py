@@ -1,9 +1,8 @@
-from app import app
+from app import app, database
 from flask import render_template, request
-from app.src.solver import task
+from app.src.solver import Task, Plotter
 import plotly.graph_objects as go  
 import numpy as np
-import json
 
 @app.route('/')
 def index():
@@ -11,7 +10,6 @@ def index():
 
 @app.route('/<path:path>')
 def send_static_file(path):
-    print(path)
     return app.send_static_file(path)
 
 @app.route('/process', methods = ['GET', 'POST'])
@@ -28,8 +26,8 @@ def process():
         
     initial_value = initial_value.flatten()
     parameters = tuple(list(m)) + (data['g'], len(data['points']), data['dim'])
-    
-    ts = task(initial_value, mesh, parameters)
+    layout = dict()
+    ts = Task(initial_value, mesh, parameters, layout)
 
     ts.solve()
     ts.plot_trajectory(False)
@@ -40,13 +38,8 @@ def process():
 @app.route('/preview', methods = ['GET', 'POST'])
 def preview():
     points = request.get_json()
-
-    data = list()
-    for point in points:
-        if (point['r'] != []):
-            data.append(go.Scatter(x = [point['r'][0]], y = [point['r'][1]], mode = 'markers'))
-    
-    figure = go.Figure(data)
-
-    return figure.to_json()
+    layout = dict()
+    plotter = Plotter(layout = layout)
+    plotter.plot_preview(points)   
+    return plotter.figure_preview
     

@@ -24,11 +24,10 @@ class Accordion_Item {
     constructor(Accordion, header, id) {
         this.Accordion = Accordion; this.header = header; this.id = id; this.body = new Array()
         this.accordion_item = $('<div></div>').addClass('accordion-item').attr('id', this.Accordion.id)
-        this.accordion_item_header = $('<h2></h2>').addClass('accordion-header').append(
-            $('<button></button>').addClass('accordion-button').attr('type', 'button')
-                .attr('data-bs-toggle', 'collapse').attr('data-bs-target', '#' + this.id)
-                .attr('aria-expanded', 'true').attr('aria-controls', this.id).append(this.header)
-        )
+        this.accordion_item_button = $('<button></button>').addClass('accordion-button').attr('type', 'button')
+            .attr('data-bs-toggle', 'collapse').attr('data-bs-target', '#' + this.id)
+            .attr('aria-expanded', 'true').attr('aria-controls', this.id).append(this.header)
+        this.accordion_item_header = $('<h2></h2>').addClass('accordion-header').append(this.accordion_item_button)
         this.accordion_item_body = $('<div></div>').addClass('accordion-collapse collapse')
             .attr('id', this.id).attr('data-bs-parent', this.Accordion.id)
         this.div_body = $('<div></div>').addClass('accordion-body')
@@ -57,7 +56,7 @@ class Radios {
                     this.value = this.values[i]
                     this.change(this.values[i])
                 })
-            this.value == this.values[i] ? input.prop('checked', true) : input.prop('checked', false)
+            this.value === this.values[i] ? input.prop('checked', true) : input.prop('checked', false)
             this.label.push(label)
             this.label.push(input)
             this.radios.push([input, label])
@@ -172,7 +171,20 @@ class Item {
 
         this.parent.append(this.li)
     }
-
+    data() {
+        let temporary = new Object()
+        this.inputs.forEach(input => {
+            temporary[input.parameter.var] = input.data()
+        })
+        return temporary
+    }
+    state() {
+        let flag = true
+        this.inputs.forEach(input => {
+            flag = input.flag && flag
+        })
+        return flag
+    }
     clear() {
         this.li.remove()
         delete this.items[this.index]
@@ -205,6 +217,29 @@ class List {
             this.fiugre_preview.load()
         }
     }
+    data() {
+        let temporary = new Array()
+        Object.entries(this.items).forEach(
+            ([key, item]) => {
+                temporary.push(item.data())
+            }
+        )
+        return temporary
+    }
+    state() {
+        let flag = true
+        if (!(Object.keys(this.items).length === 0 && this.items.constructor === Object)) {
+            Object.entries(this.items).forEach(
+                ([key, item]) => {
+                    flag = item.state() && flag
+                }
+            )
+            return flag
+        }
+        else {
+            return false
+        }
+    }
     check() {}
 }
 
@@ -232,14 +267,28 @@ class Panel {
         this.button_run.append('Calculate')
         this.button_run.prop('disabled', true)
     }
+    data() {
+        let temporary = new Object()
+        this.inputs.forEach(input => {
+            temporary[input.parameter.var] = input.data()
+        })
+        return temporary
+    }
+    state() {
+        let flag = true
+        this.inputs.forEach(input => {
+            flag = input.flag && flag
+        })
+        return flag
+    }
 }
 
 class SolverPanel {
-    constructor(parent) {
-        this.parent = parent
+    constructor(parent, initial_congif_task) {
+        this.parent = parent; this.initial_congif_task = initial_congif_task;
 
-        this.inputs_parameters = [{'label': 'Initial coordinate vecror', 'limit': [-10, 10], 'dim': 2, 'var': 'r'}, 
-            {'label': 'Initial velocity vecror', 'limit': [-10, 10], 'dim': 2, 'var': 'dr'},
+        this.inputs_parameters = [{'label': 'Initial coordinate vecror', 'limit': [-10, 10], 'dim': this.initial_congif_task.dim, 'var': 'r'}, 
+            {'label': 'Initial velocity vecror', 'limit': [-10, 10], 'dim': this.initial_congif_task.dim, 'var': 'dr'},
             {'label': 'Mass', 'limit': [0, 10], 'dim': 1, 'var': 'm'}
         ]
 
@@ -247,25 +296,12 @@ class SolverPanel {
             {'label': 'Mesh', 'limit': [0, 1000000], 'dim': 3, 'var': 'mesh'}
         ]
 
-        this.initial_congif_task = {'dim': 2, 'g': 1, 'mesh': [0, 5, 1000], 'points': [
-            {'r': [-1, 0], 'dr': [0, 0], 'm': 5}, 
-            {'r': [1, 0], 'dr': [0, 0], 'm': 1},
-            {'r': [0, 1], 'dr': [0, 0], 'm': 1}
-        ]}
-
-        // this.initial_congif_task = {'dim': 3, 'g': 1, 'mesh': [0, 5, 10000], 'points': [
-        //     {'r': [-1, 0, 0], 'dr': [0, 0, 0], 'm': 5}, 
-        //     {'r': [1, 0, 1], 'dr': [0, 0, 0], 'm': 1},
-        //     {'r': [0, 1, 1], 'dr': [0, 0, 0], 'm': 1}
-        // ]}
-
         this.url_run = '/process'
         this.url_preview = '/preview'
 
         this.create_elements()
         this.initialize()
         this.create_callbacks()
-
     }
 
     create_elements() {
@@ -273,6 +309,7 @@ class SolverPanel {
     
         this.accordion_setting = new Accordion_Item(this.accordion, 'Settings', 'accordion-task-panel-item-1')
         this.accordion_result = new Accordion_Item(this.accordion, 'Results', 'accordion-task-panel-item-2')
+        this.accordion_result.accordion_item_button.prop('disabled', true)
 
         this.card_dimension = new Card('Dimension')
         this.card_condition = new Card('Initial Conditions')
@@ -307,23 +344,8 @@ class SolverPanel {
     }
 
     check () {
-        let flag = true
-        Object.entries(this.list.items).forEach(
-            ([key, item]) => {
-                item.inputs.forEach(input => {
-                    flag = input.flag && flag 
-                })
-            }
-        )
-        
-        this.panel.inputs.forEach(input => {
-            flag = input.flag && flag 
-        })
-            
-        this.panel.button_run.prop('disabled', !(flag && !(Object.keys(this.list.items).length === 0 && this.list.items.constructor === Object)))
-
-        this.plot_preview()
-
+        this.list.state() ? this.plot_preview(this.list.data()) : this.list.fiugre_preview.load()
+        this.panel.button_run.prop('disabled', !(this.list.state() && this.panel.state()))
     }
 
     create_callbacks() {
@@ -347,7 +369,9 @@ class SolverPanel {
         Panel.prototype.run = () => {
 
             let request = {'method': 'POST', 'headers': {'Content-Type': 'application/json'}, 
-                'body': JSON.stringify(this.get_data())}
+                'body': JSON.stringify(this.data())}
+
+            this.accordion_result.accordion_item_button.prop('disabled', false)
 
             this.accordion_setting.accordion_item_body.collapse('hide')
             this.accordion_result.accordion_item_body.collapse('show')
@@ -372,42 +396,18 @@ class SolverPanel {
 
     }
 
-    get_data() {
-        let data = {'points': new Array(), 'dim': this.radios.value}
-        Object.entries(this.list.items).forEach(
-            ([key, item]) => {
-                let temporary = new Object()
-                item.inputs.forEach(input => {
-                    temporary[input.parameter.var] = input.data()
-                })
-                data['points'].push(temporary)
-            }
-        )
-        this.panel.inputs.forEach(input => {
-            data[input.parameter.var] = input.data()
-        })
-        return data
+    data() {
+        return Object.assign({'points': this.list.data(), 'dim': this.radios.value}, this.panel.data())
     }
 
-    plot_preview() {
-        
-        if (Object.keys(this.list.items).length === 0 && this.list.items.constructor === Object) {
-            this.list.card_preview.card.hide()
-        }
-        else {
-            let points = this.get_data()['points']
-            if (!(points.length == 1 && points[0].r.length == 0)) {
-                let request = {'method': 'POST', 'headers': {'Content-Type': 'application/json'}, 
-                    'body': JSON.stringify(points)}
+    plot_preview(data) {
+        let request = {'method': 'POST', 'headers': {'Content-Type': 'application/json'}, 
+                'body': JSON.stringify(data)}
 
-                fetch(this.url_preview, request).then(response => response.json()).then(json => {
-                    this.list.fiugre_preview.clear()
-                    this.list.fiugre_preview.plot(json)
-                })
-            }
-
-        }
-
+        fetch(this.url_preview, request).then(response => response.json()).then(json => {
+            this.list.fiugre_preview.clear()
+            this.list.fiugre_preview.plot(json)
+        })
     }
 
     initialize() {
