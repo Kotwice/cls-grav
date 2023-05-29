@@ -7,34 +7,37 @@ class except_initiate(Exception):
         return 'initial value is incorrect'
 
 class Solver():
+    """Numerical solving the cauchy problem"""
+    
     def __init__(self) -> None:
         pass
     def solve(self):
+        """Solving ODE"""  
         self.solution = odeint(self.build_system_equations, self.initian_value, self.mesh, args = self.parameters)
         self.r = self.solution[:, ::2]
         self.dr = self.solution[:, 1::2]
         
     def build_system_equations (self, argument, t, *parameters):
-
+        """Building the cauchy problem"""
         m = parameters[:-3]
         g = parameters[-3]
         order = parameters[-2]
         dimension = parameters[-1]
 
-        r = np.reshape(argument[::2], (-1, dimension))
-        dr = argument[1::2]    
-        ddr = np.zeros((order, dimension))
-        R = np.zeros((order, order))
+        r = np.reshape(argument[::2], (-1, dimension)) # array of unknown variables
+        dr = argument[1::2] # array of first derivatives
+        ddr = np.zeros((order, dimension)) # array of second derivatives
+        r_ij = np.zeros((order, order)) # array of mutual distance
         temp = np.zeros((order, dimension))
 
         for i in range(0, order):
             for j in range(0, order):
-                R[i, j] = np.sqrt(np.sum((r[i, :] - r[j, :]) ** 2))
+                r_ij[i, j] = np.sqrt(np.sum((r[i, :] - r[j, :]) ** 2))
 
         for i in range(0, order):
             for j in range(0, order):        
                 if (j != i):
-                    temp[j] = g * m[j] * (r[j, :] - r[i, :]) / R[i, j] ** 3
+                    temp[j] = g * m[j] * (r[j, :] - r[i, :]) / r_ij[i, j] ** 3
                 else:
                     temp[j] = np.zeros(dimension)
             ddr[i, :] = np.sum(temp, 0)
@@ -51,10 +54,14 @@ class Solver():
 
         return vector
 class Plotter():
+    """Plotting result by way plotly"""
+    
     def __init__(self, layout: dict) -> None:
         self.layout = layout
         
     def plot_trajectory(self, show = True) -> None:
+        """Plotting the space trajectory"""
+        
         try:
             indexes = np.arange(self.r.shape[1]).reshape(self.order, -1)
             match self.dimension:
@@ -73,6 +80,7 @@ class Plotter():
             print(error)
         
     def plot_velocity(self, show = True) -> None:
+        """Plotting the phase trajectory"""
         try:
             indexes = np.arange(self.dr.shape[1]).reshape(self.order, -1)
             match self.dimension:
@@ -107,11 +115,8 @@ class Plotter():
         
 class Task(Solver, Plotter):
     def __init__(self, initian_value: np.ndarray, mesh: np.ndarray, parameters: tuple, layout: dict) -> None:
-        try:
-            if (initian_value.shape[0] != 2*parameters[-1]*parameters[-2]):
-                raise except_initiate()
-        except except_initiate as error:
-            print(error)
+        if (initian_value.shape[0] != 2*parameters[-1]*parameters[-2]):
+            raise except_initiate()
         else:
             self.initian_value = initian_value
             self.mesh = mesh
@@ -123,3 +128,21 @@ class Task(Solver, Plotter):
             self.dimension = parameters[-1] # task dimension    
             self.layout = layout # layout for plotter plotly
             Plotter.__init__(self, self.layout)
+            
+def json_convert(data: dict):
+    try:
+        mesh = np.linspace(data['mesh'][0], data['mesh'][1], num = data['mesh'][2])
+        
+        initial_value = np.zeros((len(data['points']), 2 * data['dim']))
+        m = np.zeros((len(data['points'])))
+        for i in np.arange(initial_value.shape[0]):
+            initial_value[i, ::2] = data['points'][i]['r']
+            initial_value[i, 1::2] = data['points'][i]['dr']
+            m[i] = data['points'][i]['m']
+            
+        initial_value = initial_value.flatten()
+        parameters = tuple(list(m)) + (data['g'], len(data['points']), data['dim'])
+
+        return initial_value, mesh, parameters
+    except:
+        return None

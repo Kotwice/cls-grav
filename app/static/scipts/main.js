@@ -1,4 +1,6 @@
 import {SolverPanel} from './task-panel.js'
+import {Login} from './authentication.js'
+import {Menu} from './menu.js'
 
 $(document).ready(() => {
 
@@ -17,6 +19,13 @@ $(document).ready(() => {
             {'r': [0, 1, 1], 'dr': [0, 0, 0], 'm': 1}
         ]}
 
-    let panel = new SolverPanel(page, initial_congif_task_3d)
+    // let panel = new SolverPanel(page, initial_congif_task_3d)
+
+    let login = new Login($('.body'))
+    let menu = new Menu($('.body'))
+
+    Login.prototype.event = () => {
+        menu.show()
+    }
 
 })
